@@ -118,7 +118,7 @@ instance HasVars (M.Map String Integer -> Maybe Integer) where
 -- add/mul to Maybe Integer values, which then dispatch to the Expr
 -- (Maybe Integer) instance.
 instance Expr (M.Map String Integer -> Maybe Integer) where
-  lit a = (\_ -> Just a)        -- "lift" a literal into a constant
+  lit a = \_ -> Just a          -- "lift" a literal into a constant
                                 -- function, probably a more idiomatic
                                 -- way to do this.
   add a b = add <$> a <*> b

@@ -6,26 +6,28 @@ module SExpr where
 
 import AParser
 import Control.Applicative
+import Data.Char (isSpace, isAlpha, isAlphaNum)
 
 ------------------------------------------------------------
 --  1. Parsing repetitions
 ------------------------------------------------------------
 
 zeroOrMore :: Parser a -> Parser [a]
-zeroOrMore p = undefined
+zeroOrMore p = (:) <$> p <*> zeroOrMore p <|> emptyParser
+  where emptyParser = Parser (\s -> Just ([], s))
 
 oneOrMore :: Parser a -> Parser [a]
-oneOrMore p = undefined
+oneOrMore p = (:) <$> p <*> zeroOrMore p
 
 ------------------------------------------------------------
 --  2. Utilities
 ------------------------------------------------------------
 
 spaces :: Parser String
-spaces = undefined
+spaces = zeroOrMore (satisfy isSpace)
 
 ident :: Parser String
-ident = undefined
+ident = (:) <$> satisfy isAlpha <*> zeroOrMore (satisfy isAlphaNum)
 
 ------------------------------------------------------------
 --  3. Parsing S-expressions
@@ -44,3 +46,17 @@ data Atom = N Integer | I Ident
 data SExpr = A Atom
            | Comb [SExpr]
   deriving Show
+
+
+parseSExpr :: Parser SExpr
+parseSExpr = spaces *>                 -- eat spaces, then
+             (   A <$> parseAtom <|>   -- construct atoms, or
+              Comb <$> parseSExprList) -- construct s-expression lists
+
+parseAtom :: Parser Atom
+parseAtom = (N <$> posInt) <|> (I <$> ident) -- parens are for clarity
+
+parseSExprList :: Parser [SExpr]
+parseSExprList =  openParen *> oneOrMore parseSExpr <* closeParen
+  where openParen  = char '(' <*  spaces
+        closeParen = spaces    *> char ')'
